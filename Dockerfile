@@ -57,7 +57,7 @@ RUN test -f package-lock.json \
   || (echo "package-lock.json is required for reproducible Docker builds" >&2 && exit 1)
 RUN --mount=type=cache,id=s/aab0b27c-a141-407e-a319-380e0be4dec9-/root/.npm,target=/root/.npm \
   npm ci --no-audit --no-fund --legacy-peer-deps --ignore-scripts \
-  && npm rebuild better-sqlite3 \
+  && npm rebuild better-sqlite3 --foreground-scripts --ignore-scripts=false \
   && node -e "require('better-sqlite3')(':memory:').close()"
 
 # Build with Turbopack (stable in Next 16, the repo default). The v3.8.27-era
