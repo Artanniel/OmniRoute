@@ -112,6 +112,20 @@ const EXTRA_MODULE_ENTRIES = [
     dest: ["node_modules", "pino-pretty"],
   },
   { label: "split2", src: ["node_modules", "split2"], dest: ["node_modules", "split2"] },
+    {
+    // next.config.mjs defines a top-level `webpack(config, { webpack })` hook
+    // (for the privileged-source NormalModuleReplacementPlugin), so Next's own
+    // config loader (dist/server/config-utils.js) requires the real compiled
+    // webpack package at Next() instantiation time — even in production,
+    // where no actual bundling happens. NFT doesn't see this as a static
+    // import (it's resolved dynamically inside Next core), so it's dropped
+    // from the standalone output, causing a MODULE_NOT_FOUND crash-loop on
+    // boot. Ship it explicitly, same rationale as the other untraced entries.
+    label: "next compiled webpack (webpack-lib)",
+    src: ["node_modules", "next", "dist", "compiled", "webpack"],
+    dest: ["node_modules", "next", "dist", "compiled", "webpack"],
+  },
+
   { label: "migrations", src: ["src", "lib", "db", "migrations"], dest: ["migrations"] },
   { label: "MITM server", src: ["src", "mitm", "server.cjs"], dest: ["src", "mitm", "server.cjs"] },
   {
