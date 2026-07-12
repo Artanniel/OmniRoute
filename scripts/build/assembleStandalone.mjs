@@ -112,20 +112,22 @@ const EXTRA_MODULE_ENTRIES = [
     dest: ["node_modules", "pino-pretty"],
   },
   { label: "split2", src: ["node_modules", "split2"], dest: ["node_modules", "split2"] },
-    {
+  {
     // next.config.mjs defines a top-level `webpack(config, { webpack })` hook
     // (for the privileged-source NormalModuleReplacementPlugin), so Next's own
-    // config loader (dist/server/config-utils.js) requires the real compiled
-    // webpack package at Next() instantiation time — even in production,
-    // where no actual bundling happens. NFT doesn't see this as a static
-    // import (it's resolved dynamically inside Next core), so it's dropped
-    // from the standalone output, causing a MODULE_NOT_FOUND crash-loop on
-    // boot. Ship it explicitly, same rationale as the other untraced entries.
-    label: "next compiled webpack (webpack-lib)",
-    src: ["node_modules", "next", "dist", "compiled", "webpack"],
-    dest: ["node_modules", "next", "dist", "compiled", "webpack"],
+    // config loader (dist/server/config-utils.js) requires several real
+    // compiled vendor packages at Next() instantiation time — even in
+    // production, where no actual bundling happens. First it was just
+    // webpack-lib (MODULE_NOT_FOUND on next/dist/compiled/webpack/webpack-lib);
+    // the next deploy hit next/dist/compiled/@babel/runtime/package.json too.
+    // These requires are dynamic/internal to Next core, so file tracing can't
+    // see them as static imports and keeps dropping pieces of this tree from
+    // the standalone output, one MODULE_NOT_FOUND crash-loop at a time. Ship
+    // the whole compiled/ directory instead of chasing individual files.
+    label: "next compiled vendor bundle (dist/compiled)",
+    src: ["node_modules", "next", "dist", "compiled"],
+    dest: ["node_modules", "next", "dist", "compiled"],
   },
-
   { label: "migrations", src: ["src", "lib", "db", "migrations"], dest: ["migrations"] },
   { label: "MITM server", src: ["src", "mitm", "server.cjs"], dest: ["src", "mitm", "server.cjs"] },
   {
