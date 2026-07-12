@@ -118,12 +118,30 @@ RUN mkdir -p /app/data
 # The old per-module overrides were therefore pure duplication and were removed
 # (build-output-isolation cleanup). See scripts/build/assembleStandalone.mjs
 # (EXTRA_MODULE_ENTRIES) for the single source of truth.
-COPY --from=builder /app/.build/next/standalone ./
+#COPY --from=builder /app/.build/next/standalone ./
 # better-sqlite3 is the one exception still copied explicitly: assembleStandalone
 # only syncs its native build/ dir; the JS wrapper (lib/, package.json) is left to
 # Next.js tracing. bootstrap-env requires SQLite BEFORE the standalone server
 # starts, so guarantee the complete package independent of trace behaviour.
-COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+#COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+
+COPY --from=builder /app/.build/next/standalone ./
+# Overwrite the standalone output's pruned node_modules with the builder's
+# complete one. next.config.mjs itself (next-intl/plugin, fumadocs-mdx/next,
+# and their transitive dependency trees — @parcel/watcher, @swc/core,
+# @mdx-js/mdx, etc.) is loaded fresh by the custom server's Next() call at
+# container boot, outside Next's standalone output-file-tracing graph. NFT
+# only traces the actual route/server code, so every package reachable only
+# from next.config.mjs's own imports kept turning up missing one at a time
+# (dist/compiled/webpack, dist/compiled/@babel/runtime, next-intl,
+# fumadocs-mdx, @parcel/watcher, ...). Rather than chase this dependency
+# tree file-by-file in EXTRA_MODULE_ENTRIES, ship node_modules whole —
+# bigger image, but correct by construction regardless of what
+# next.config.mjs imports today or in the future. Keep the EXTRA_MODULE_ENTRIES
+# entries above/below anyway: they also cover non-node_modules paths
+# (migrations, scripts/, src/mitm/server.cjs) that this COPY doesn't touch.
+COPY --from=builder /app/node_modules ./node_modules
+
 # migrations land at <standalone>/migrations via assembleStandalone; point the runtime at them.
 ENV OMNIROUTE_MIGRATIONS_DIR=/app/migrations
 
