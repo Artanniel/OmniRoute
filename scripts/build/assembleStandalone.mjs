@@ -128,6 +128,35 @@ const EXTRA_MODULE_ENTRIES = [
     src: ["node_modules", "next", "dist", "compiled"],
     dest: ["node_modules", "next", "dist", "compiled"],
   },
+  {
+    // next.config.mjs's top-level `import createNextIntlPlugin from
+    // "next-intl/plugin"` — same "only reachable from config, not traced"
+    // class of bug as the dist/compiled entries above. Without it, the
+    // custom server's Next() call fails to even load next.config.mjs
+    // (ERR_MODULE_NOT_FOUND on 'next-intl'), which is a harder failure than
+    // a missing runtime feature: the server never starts at all.
+    label: "next-intl (imported by next.config.mjs)",
+    src: ["node_modules", "next-intl"],
+    dest: ["node_modules", "next-intl"],
+  },
+  {
+    // Same as next-intl above: next.config.mjs does
+    // `import { createMDX } from "fumadocs-mdx/next"` at the top level.
+    label: "fumadocs-mdx (imported by next.config.mjs)",
+    src: ["node_modules", "fumadocs-mdx"],
+    dest: ["node_modules", "fumadocs-mdx"],
+  },
+  {
+    // next.config.mjs also imports this local helper directly:
+    // `import { mitmManagerAliasFor } from "./scripts/build/mitm-stub-flag.mjs"`.
+    // It's a relative import from repo root (where next.config.mjs itself
+    // lives in the standalone output), not part of the app's traced route
+    // graph, so it needs the same explicit treatment as the other
+    // config-only dependencies above.
+    label: "mitm-stub-flag helper (imported by next.config.mjs)",
+    src: ["scripts", "build", "mitm-stub-flag.mjs"],
+    dest: ["scripts", "build", "mitm-stub-flag.mjs"],
+  },
   { label: "migrations", src: ["src", "lib", "db", "migrations"], dest: ["migrations"] },
   { label: "MITM server", src: ["src", "mitm", "server.cjs"], dest: ["src", "mitm", "server.cjs"] },
   {
