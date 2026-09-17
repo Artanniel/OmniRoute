@@ -36,6 +36,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # package-lock.json fica fora de sincronia com package.json quando
+      # npm resolve contra o workspace completo (root + open-sse/) em vez do
+      # contexto parcial que o Dockerfile copia antes do `npm ci` — reproduzido
+      # de forma determinística tanto no servidor Hetzner quanto num runner
+      # limpo do GitHub. Regenerar aqui, contra o checkout completo, corrige
+      # antes do Docker COPY pegar o lockfile.
+      - name: Sync package-lock.json
+        run: |
+          docker run --rm -v "$(pwd)":/app -w /app node:26-trixie-slim \
+            npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund --ignore-scripts
+
       - name: Build and push (runner-base target)
         uses: docker/build-push-action@v6
         with:
